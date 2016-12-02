@@ -46,7 +46,7 @@
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js" type="text/javascript"></script>
   <script type="text/javascript">
   	//Copyright 2016 Trevor Gast: codeandcompose.com
-		//Projectile motion particle Trajectory visualizer version 1.0 (20 November 2016)
+		//Projectile motion particle Trajectory visualizer version 1.1 (2 December 2016)
 		//GNU General Public License
 		//This program is free software: you can redistribute it and/or modify
     	//it under the terms of the GNU General Public License as published by
@@ -114,6 +114,8 @@
   		// 96 - 192 1:4 etc...
   	var animating = false;
   	
+  	var target = {"X":0,"y":0,"active":false};
+  	
   	var landingT = 0;
   	var landingD = 0;
   	var maxH = 0;
@@ -155,6 +157,21 @@
 		if (x < 250) return "left";
 		else if (x > 750) return "right";
 		else return "center";
+	}
+	
+	function defineTrajectory(x,y){
+		tanTheta1 = quadraticFormula(g*x*x/(2*v0*v0),x,-(y-y0)+(g*x*x/(2*v0*v0)),1);
+		tanTheta2 = quadraticFormula(g*x*x/(2*v0*v0),x,-(y-y0)+(g*x*x/(2*v0*v0)),-1);
+		//console.log(tanTheta1 + " " + tanTheta2);
+		if (tanTheta1 > 0) theta = Math.atan(tanTheta1);//for now...
+		else theta = Math.atan(tanTheta2);
+		$('#angle').val(theta*180/Math.PI);
+		target.x = x;
+		target.y = y;
+		target.active = true;
+		calcValues();
+    	drawScene();
+    	drawTrajectory();
 	}
 
 	/////////////////////
@@ -214,6 +231,21 @@
 			ctxb.stroke();
 			ctxb.fillText(n*incsize,20,-n*incsize*SCALE+492);
 		}
+		//draw target
+		if (target.active){
+			ctxb.strokeStyle = "red";
+			ctxb.lineWidth = 3;
+			ctxb.beginPath();
+			ctxb.arc(target.x*SCALE+40,-target.y*SCALE+500,1,0,2*Math.PI);
+			ctxb.stroke();
+			ctxb.beginPath();
+			ctxb.arc(target.x*SCALE+40,-target.y*SCALE+500,6,0,2*Math.PI);
+			ctxb.stroke();
+			ctxb.beginPath();
+			ctxb.arc(target.x*SCALE+40,-target.y*SCALE+500,11,0,2*Math.PI);
+			ctxb.stroke();
+		}
+		
 	}
 	
 	function drawTrajectory(tpercent){
@@ -347,6 +379,8 @@
 		} else if (clickX < SCALE*maxHtime*minV + 40 && clickY > 500 - (y0*SCALE)){
 			moveLaunch = true;
 			return;
+		} else if (clickX > 40) {
+			defineTrajectory(Math.round(100*(clickX-40)/SCALE)/100,Math.round(100*(500 - clickY)/SCALE)/100);
 		}
 	}
 	
@@ -395,13 +429,14 @@
 		});
 		$('#angle').change(function(){
 			theta = parseInt($('#angle').val())*Math.PI/180;
+			target.active = false;
 			calcValues();
 			drawScene();
 			drawTrajectory(parseInt($('#time-slider').val()));
 		});
 		$('#velocity').change(function(){
 			v0 = parseFloat($('#velocity').val());
-			console.log(v0);
+			//console.log(v0);
 			var i = Math.floor(v0/12);
 			var c = 0;
 			while (i >=1){
@@ -412,6 +447,7 @@
 			SCALE = (c < 0) ? Math.pow(4,-c-1)/1 : 1/Math.pow(4,c+1);//2c?
 			var slider = (SCALE >= 1) ? -SCALE : Math.round(1/SCALE);
 			$('#scale-slider').val(slider);
+			target.active = false;
 			calcValues();
 			drawScene();
 			drawTrajectory();
@@ -422,6 +458,7 @@
 				g = -9.80665;
 				$('#gravity').val(-g);
 			}
+			target.active = false;
 			calcValues();
 			drawScene();
 			drawTrajectory();
